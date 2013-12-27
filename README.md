@@ -28,7 +28,7 @@ end
 
 Now, create an OOOR configuration for public objects that will be proxied to some running OpenERP instance.
 Warning! use some specific portal user, never admin user in production!
-But here it's just for a local demo, so yoru config could be inside your website folder: config/ooor.yml with the following content for instance:
+But here it's just for a local demo, so your config could be inside your website folder: config/ooor.yml with the following content for instance:
 
 ```
 development:
@@ -47,11 +47,11 @@ bundle exec wagon serve
 Now, inside a page template, you can use erpify tags and drops, such as:
 
 ```
-          {% with_domain type:'service' %}
-          {% for product in ooor_public_model['product.product'] %}
-          {{product.name}} - {{product.categ_id.name}}
-          {% endfor %}
-          {% endwith_domain %}
+  {% with_domain type:'service' %}
+  {% for product in ooor_public_model['product.product'] %}
+  {{product.name}} - {{product.categ_id.name}}
+  {% endfor %}
+  {% endwith_domain %}
 ```
 
 
