@@ -12,14 +12,14 @@ Make sure you understand Wagon first:
 
 example usage:
 
-in the website you develop locally with Wagon, edit your Gemfile to add the wagon-erpify gem and also possibly its dependencies that aren't released yet (grab them with git locally first):
+in the website you develop locally with Wagon, complete your Gemfile to add the wagon-erpify gem and also possibly its dependencies that aren't released yet (we will grab them using git for now):
 
 ```ruby
 group :misc do
   gem 'faraday', git: 'https://github.com/lostisland/faraday.git' #you may need last version to avoid a dependency conflict
-  gem 'ooor', path: '../../ooor'
-  gem 'erpify', path: '../../erpify'
-  gem 'wagon-erpify', path: '../../wagon-erpify'
+  gem 'ooor', git: 'https://github.com/akretion/ooor.git'
+  gem 'erpify', git: 'https://github.com/akretion/erpify.git'
+  gem 'wagon-erpify', git: 'https://github.com/akretion/wagon-erpify.git'
   # Add your extra gems here
   # gem 'susy', require: 'susy'
   # gem 'redcarpet', require: 'redcarpet'
