@@ -26,6 +26,12 @@ group :misc do
 end
 ```
 
+Now install the modules using Bundler
+
+```
+bundle install
+```
+
 Now, create an OOOR configuration for public objects that will be proxied to some running OpenERP instance.
 Warning! use some specific portal user, never admin user in production!
 But here it's just for a local demo, so your config could be inside your website folder: config/ooor.yml with the following content for instance:
