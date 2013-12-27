@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
     "test/test_wagon-erpify.rb",
     "wagon-erpify.gemspec"
   ]
-  s.homepage = "http://github.com/rvalyi/wagon-erpify"
+  s.homepage = "http://github.com/akretion/wagon-erpify"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.24"

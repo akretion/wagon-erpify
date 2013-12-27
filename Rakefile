@@ -15,7 +15,7 @@ require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
   gem.name = "wagon-erpify"
-  gem.homepage = "http://github.com/rvalyi/wagon-erpify"
+  gem.homepage = "http://github.com/akretion/wagon-erpify"
   gem.license = "MIT"
   gem.summary = %Q{enable OpenERP in LocomotiveCMS sites developped with wagon}
   gem.description = %Q{Allows to use OpenERP via erpify in local LocomotiveCMS sites developped with wagon}
