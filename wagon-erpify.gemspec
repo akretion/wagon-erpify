@@ -25,7 +25,8 @@ Gem::Specification.new do |s|
     "VERSION",
     "lib/wagon-erpify.rb",
     "test/helper.rb",
-    "test/test_wagon-erpify.rb"
+    "test/test_wagon-erpify.rb",
+    "wagon-erpify.gemspec"
   ]
   s.homepage = "http://github.com/rvalyi/wagon-erpify"
   s.licenses = ["MIT"]
