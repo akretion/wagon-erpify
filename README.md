@@ -60,4 +60,7 @@ Now, inside a page template, you can use erpify tags and drops, such as:
   {% endwith_domain %}
 ```
 
+Important note:
 
+you will be able to push such a template to a LocomotiveCMS engine, only if you load the locomotive-erpify gem into the LocomotiveCMS engine before,
+as described here https://github.com/akretion/locomotive-erpify
