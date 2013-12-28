@@ -1,34 +1,5 @@
 require 'erpify'
 require 'locomotive/mounter'
-
-module Erpify
-  module ContentTypesReader
-    def initialize(runner)
-      attributes = {"name"=>"Ooor Entry", "slug"=>"ooor_entries", "description"=>"Ooor Entry", "label_field_name"=>"name", "fields"=>[]}
-      res = super(runner)
-      add(attributes)
-      res
-    end
-  end
-end
-
-Locomotive::Mounter::Reader::FileSystem::ContentTypesReader.send :include, Erpify::ContentTypesReader
-
-#FIXME unfortunately, in wagon/lib/locomotive/wagon.rb:169:in `require_mounter'
-# the mounter will start loading content from the file system BEFORE we could register this
-# Erpify::ContentTypesReader that will ensure the ooor_entries content_entry will be found
-# that is content_types are already loaded without it and templatized page using it will
-# have no content_type at this point. This is why we have to reload these contents it as a work around:
-
-runner = Locomotive::Mounter::Reader::FileSystem.instance
-runner.run!(runner.parameters.merge({path: runner.path}))
-#r = Locomotive::Mounter::Reader::FileSystem::ContentTypesReader.new(runner)
-#runner.mounting_point.register_resource('content_types', r.read)
-
-#r = Locomotive::Mounter::Reader::FileSystem::PagesReader.new(runner)
-#runner.mounting_point.register_resource('pages', r.read)
-
-
 require 'locomotive/wagon/server'
 
 module Locomotive::Wagon
@@ -37,7 +8,11 @@ module Locomotive::Wagon
     class Renderer < Middleware
 
       def locomotive_context_with_erpify(other_assigns = {})
-        erpiy_assigns = {"ooor_public_model" => Erpify::Liquid::Drops::OoorPublicModel.new()}
+        erpiy_assigns = {
+                          "ooor_public_model" => Erpify::Liquid::Drops::OoorPublicModel.new(),
+                          "ooor_model" => Erpify::Liquid::Drops::OoorPublicModel.new(), #no authentication in Wagon
+                        }
+
         other_assigns.merge!(erpiy_assigns)
         locomotive_context_without_erpify(erpiy_assigns)
       end
@@ -128,10 +103,11 @@ end
 
 
 begin
-  config_file = "#{Dir.pwd}/config/ooor.yml"
-  Ooor.default_config = HashWithIndifferentAccess.new(YAML.load_file(config_file)['development'])
+  config_file = "#{Dir.pwd}/data/ooor_entries.yml"
+  connection_configs = YAML.load_file(config_file)
+  config = HashWithIndifferentAccess.new(connection_configs[0])
+  Ooor.default_config = HashWithIndifferentAccess.new(config[config.keys[0]]) #FIXME should be first public
 rescue SystemCallError
   puts """failed to load OOOR yaml configuration file.
-       make sure your app has a #{config_file} file correctly set up
-       if not, just copy/paste the default ooor.yml file from the OOOR Gem\n\n"""
+       make sure your app has a #{config_file} file correctly set up\n\n"""
 end
