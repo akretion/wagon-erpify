@@ -1,6 +1,28 @@
 require 'erpify'
 require 'locomotive/mounter'
 require 'locomotive/wagon/server'
+require 'ostruct'
+
+module Ooor
+  class Base #TODO put in a helper
+    def content_type
+      @content_type ||= OpenStruct.new(slug: 'ooor_entries')
+    end
+
+    def content_entry
+      self
+    end
+
+    def _slug
+      id.to_s
+    end
+
+    def _label
+      name
+    end
+  end
+end
+
 
 module Locomotive::Wagon
   class Server
@@ -29,7 +51,7 @@ module Locomotive::Wagon
 
         permalink = $1
 
-        if page.content_type.slug == 'ooor_entries'
+        if page.content_type.slug == 'ooor_entries' #TODO match the model or moel alias too
           method_or_key = self.path.split('/')[0].gsub('-', '.')
           model = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config).const_get(method_or_key)
           env['wagon.content_entry'] = model.find(permalink) #TODO implement find by permalink (and to_param)
@@ -56,44 +78,18 @@ module Locomotive
       module Tags
         module PathHelper
           def retrieve_page_from_handle_with_erpify(context)
+            mounting_point = context.registers[:mounting_point]
             context.scopes.reverse_each do |scope|
               handle = scope[@handle] || @handle
-              return handle if handle.is_a?(Ooor::Base)
+              if handle.is_a?(Ooor::Base)
+                return fetch_page(mounting_point, handle, true)
+              end
             end
             retrieve_page_from_handle_without_erpify(context)
           end
 
           alias_method :retrieve_page_from_handle_without_erpify, :retrieve_page_from_handle
           alias_method :retrieve_page_from_handle, :retrieve_page_from_handle_with_erpify
-
-          def public_page_fullpath_with_erpify(context, page)
-            if page.is_a?(Ooor::Base)
-              return File.join('/', page.class.openerp_model.gsub('.', '-'), '/', page.id.to_s)
-            else
-              public_page_fullpath_without_erpify(context, page)
-            end
-          end
-
-          alias_method :public_page_fullpath_without_erpify, :public_page_fullpath
-          alias_method :public_page_fullpath, :public_page_fullpath_with_erpify
-
-        end
-
-
-        class LinkTo < Hybrid
-          def label_from_page(page)
-            if page.is_a?(Ooor::Base)
-              return page.name
-            end
-
-            ::Locomotive::Mounter.with_locale(@_options['locale']) do
-              if page.templatized?
-                page.content_entry._label
-              else
-                page.title
-              end
-            end
-          end
 
         end
       end
