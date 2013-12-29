@@ -5,10 +5,11 @@ require 'ostruct'
 require 'uri'
 require 'delegate'
 
-module Ooor
-  class Base #TODO put in a helper module
+
+module Erpify
+  module ContentEntryHelper
     def content_type
-      @content_type ||= OpenStruct.new(slug: self.class.alias.gsub('.', '-')) #TODO immprove, haveconfigurable aliases..
+      @content_type ||= OpenStruct.new(slug: self.class.param_key)
     end
 
     def content_entry
@@ -16,15 +17,11 @@ module Ooor
     end
 
     def _slug
-      self.send(self.class.slug_key).to_s
+      to_param
     end
 
-    def self.slug_key
-      self.connection.config[:slug_keys] && self.connection.config[:slug_keys][self.alias] || :id
-    end
-
-    def self.find_by_slug(slug)
-      find(:first, domain: {slug_key => slug})
+    def _permalink
+      to_param
     end
 
     def _label
@@ -32,6 +29,8 @@ module Ooor
     end
   end
 end
+
+Ooor::Base.send :include, Erpify::ContentEntryHelper
 
 
 class SlugDecorator < SimpleDelegator
@@ -54,8 +53,8 @@ module Locomotive
         def content_type_with_erpify
           c_type = content_type_without_erpify
           if c_type && c_type.slug == 'ooor_entries'
-            s = self.to_s.split('/')[0]
-            model = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config).const_get(s.gsub('-', '.'))
+            param_key = (self.to_s.split('/')[0]).gsub('-', '.')
+            model = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config).const_get(param_key)
             new_slug = model.alias.gsub('.', '-')
             SlugDecorator.new(c_type, new_slug)
           else
@@ -72,20 +71,42 @@ module Locomotive
 end
 
 
-
 module Locomotive::Wagon
   class Server
+
+    class Locale < Middleware
+
+      def to_erp_locale(locale)
+        mappings = {'fr' => 'fr_FR', 'en' => 'en_US'}
+        mappings[locale] || locale
+      end
+
+      def call_with_erpify(env)
+        self.set_accessors(env)
+        self.set_locale!(env)
+        #res = call_without_erpify(env) # we cannot call it now as it may blow up if OpenERP locale isn't set to properly match models from URL's
+        connec = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config)
+        connec.connection_session['lang'] = to_erp_locale(env['wagon.locale'].to_s)
+        app.call(env)
+      end
+
+      alias_method :call_without_erpify, :call
+      alias_method :call, :call_with_erpify
+
+    end
+
 
     class Renderer < Middleware
 
       def locomotive_context_with_erpify(other_assigns = {})
-        erpiy_assigns = {
+        erpify_assigns = {
                           "ooor_public_model" => Erpify::Liquid::Drops::OoorPublicModel.new(),
                           "ooor_model" => Erpify::Liquid::Drops::OoorPublicModel.new(), #no authentication in Wagon
                         }
 
-        other_assigns.merge!(erpiy_assigns)
-        locomotive_context_without_erpify(erpiy_assigns)
+        context = locomotive_context_without_erpify(other_assigns)
+        context.merge(erpify_assigns)
+        context
       end
 
       alias_method :locomotive_context_without_erpify, :locomotive_context
@@ -103,7 +124,7 @@ module Locomotive::Wagon
         if page.content_type_without_erpify.slug == 'ooor_entries'
           method_or_key = self.path.split('/')[0].gsub('-', '.')
           model = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config).const_get(method_or_key)
-          env['wagon.content_entry'] = model.find_by_slug(URI.unescape(permalink)) #TODO implement find by permalink (and to_param)
+          env['wagon.content_entry'] = model.find_by_param(URI.unescape(permalink)) #TODO implement find by permalink (and to_param)
           return
         end
 
@@ -146,11 +167,9 @@ end
 
 
 begin
-  config_file = "#{Dir.pwd}/data/ooor_entries.yml"
-  connection_configs = YAML.load_file(config_file)
-  config_with_name = HashWithIndifferentAccess.new(connection_configs[0])
-  config = config_with_name[config_with_name.keys[0]].merge({aliases: {'products' => 'product.product'}, slug_keys: {'products' => 'name'}}) #TODO no such hardcode
-  Ooor.default_config = HashWithIndifferentAccess.new(config) #FIXME should be first public
+  config_file = "#{Dir.pwd}/config/ooor.yml"
+  config = YAML.load_file(config_file)['development']
+  Ooor.default_config = HashWithIndifferentAccess.new(config)
 rescue SystemCallError
   puts """failed to load OOOR yaml configuration file.
        make sure your app has a #{config_file} file correctly set up\n\n"""
